@@ -54,7 +54,7 @@ def main():
     print("🧠 BlueSentinel SOC Scheduler started...\n")
 
     # 🔥 PRODUÇÃO: roda 1x por semana
-    schedule.every().sunday.at("10:00").do(run_pipeline)
+    schedule.every().monday.at("10:00").do(run_pipeline)
 
     # 🔥 TESTE: executa ao iniciar
     run_pipeline()

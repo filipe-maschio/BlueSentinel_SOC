@@ -6,18 +6,10 @@ from shared.paths import DATA_DIR, TARGETS_FILE, SPIDERFOOT_PATH
 
 
 def sanitize_target(target):
-    """
-    Converts target into safe folder name.
-    Example:
-    email@gmail.com -> email_gmail_com
-    """
     return target.replace("@", "_").replace(".", "_")
 
 
 def load_targets():
-    """
-    Load targets from config file
-    """
     if not os.path.exists(TARGETS_FILE):
         print(f"❌ Targets file not found: {TARGETS_FILE}")
         return []
@@ -31,7 +23,6 @@ def run_scan(target):
 
     safe_target = sanitize_target(target)
 
-    # 🔥 NEW STRUCTURE: data/spiderfoot_outputs/<target>/
     target_folder = os.path.join(DATA_DIR, "spiderfoot_outputs", safe_target)
     os.makedirs(target_folder, exist_ok=True)
 
@@ -43,8 +34,8 @@ def run_scan(target):
     )
 
     command = [
-        sys.executable,          # ensures venv is used
-        SPIDERFOOT_PATH,
+        sys.executable,
+        "sf.py",
         "-s", target,
         "-o", "json"
     ]
@@ -57,11 +48,12 @@ def run_scan(target):
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=300
+                cwd=os.path.dirname(SPIDERFOOT_PATH)
             )
 
         if result.returncode != 0:
             print(f"❌ Error running scan for {target}")
-            print(result.stderr[:300])  # truncate output
+            print(result.stderr[:300])
         else:
             print(f"✅ Scan saved: {output_file}")
 
