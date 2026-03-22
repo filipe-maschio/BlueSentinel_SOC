@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual env
+venv/
+.env
+
+# Logs / data
+data/
+*.log
+
+# OS
+desktop.ini
+.DS_Store
+
+#External repositories
+external/spiderfoot/
