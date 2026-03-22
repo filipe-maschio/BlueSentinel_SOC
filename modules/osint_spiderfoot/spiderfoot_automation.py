@@ -33,28 +33,23 @@ def run_scan(target):
         f"scan_{timestamp}.json"
     )
 
-    command = [
-        sys.executable,
-        "sf.py",
-        "-s", target,
-        "-o", "json"
-    ]
+    spiderfoot_dir = os.path.dirname(SPIDERFOOT_PATH)
 
     try:
         with open(output_file, "w", encoding="utf-8") as f:
-            spiderfoot_dir = os.path.dirname(SPIDERFOOT_PATH)
-
-            env = os.environ.copy()
-            env["PYTHONPATH"] = spiderfoot_dir
-
             result = subprocess.run(
-                [sys.executable, "sf.py", "-s", target, "-o", "json"],
+                [
+                    sys.executable,
+                    "-m",
+                    "sf",  # 🔥 EXECUTA COMO MÓDULO
+                    "-s", target,
+                    "-o", "json"
+                ],
                 stdout=f,
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=300,
-                cwd=spiderfoot_dir,
-                env=env
+                cwd=spiderfoot_dir  # 🔥 MUITO IMPORTANTE
             )
 
         if result.returncode != 0:
