@@ -1,6 +1,6 @@
-import subprocess
 import os
 import sys
+import subprocess
 from datetime import datetime
 from shared.paths import DATA_DIR, TARGETS_FILE, SPIDERFOOT_PATH
 
@@ -42,13 +42,19 @@ def run_scan(target):
 
     try:
         with open(output_file, "w", encoding="utf-8") as f:
+            spiderfoot_dir = os.path.dirname(SPIDERFOOT_PATH)
+
+            env = os.environ.copy()
+            env["PYTHONPATH"] = spiderfoot_dir
+
             result = subprocess.run(
-                command,
+                [sys.executable, "sf.py", "-s", target, "-o", "json"],
                 stdout=f,
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=300,
-                cwd=os.path.dirname(SPIDERFOOT_PATH)
+                cwd=spiderfoot_dir,
+                env=env
             )
 
         if result.returncode != 0:
