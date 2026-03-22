@@ -1,19 +1,43 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
+*.pyd
+*$py.class
 
-# Virtual env
+# Virtual environments
 venv/
 .env
+.env.*
 
-# Logs / data
-data/
+# Build / Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs & Data
+data/*.json
+logs/
 *.log
+  
+# Secrets
+.env
+.env.local
+.env.production
 
-# OS
-desktop.ini
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# OS Files
 .DS_Store
+desktop.ini
+Thumbs.db
 
-#External repositories
+# Node
+node_modules/
+
+# Custom
 external/spiderfoot/
