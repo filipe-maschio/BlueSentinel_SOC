@@ -14,3 +14,6 @@ TARGETS_FILE = os.path.join(CONFIG_DIR, "targets_for_spiderfoot.txt")
 
 # 🧠 SpiderFoot
 SPIDERFOOT_PATH = os.path.join(EXTERNAL_DIR, "sf.py")
+
+# 🔥 Ensure required directories exist
+os.makedirs(DATA_DIR, exist_ok=True)

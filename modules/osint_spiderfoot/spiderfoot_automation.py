@@ -47,7 +47,7 @@ def run_scan(target):
                 stdout=f,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=300
+                timeout=300,
                 cwd=os.path.dirname(SPIDERFOOT_PATH)
             )
 

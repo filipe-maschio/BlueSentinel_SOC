@@ -1,3 +1,5 @@
 requests
+schedule
 python-dotenv
 cherrypy
+cherrypy-cors
