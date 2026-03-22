@@ -37,11 +37,16 @@ def run_scan(target):
 
     try:
         with open(output_file, "w", encoding="utf-8") as f:
+
+            env = os.environ.copy()
+
+            # 🔥 AQUI ESTÁ A CHAVE
+            env["PYTHONPATH"] = spiderfoot_dir
+
             result = subprocess.run(
                 [
                     sys.executable,
-                    "-m",
-                    "sf",  # 🔥 EXECUTA COMO MÓDULO
+                    SPIDERFOOT_PATH,  # 🔥 USAR CAMINHO COMPLETO
                     "-s", target,
                     "-o", "json"
                 ],
@@ -49,12 +54,13 @@ def run_scan(target):
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=300,
-                cwd=spiderfoot_dir  # 🔥 MUITO IMPORTANTE
+                cwd=spiderfoot_dir,
+                env=env
             )
 
         if result.returncode != 0:
             print(f"❌ Error running scan for {target}")
-            print(result.stderr[:300])
+            print(result.stderr[:500])
         else:
             print(f"✅ Scan saved: {output_file}")
 
