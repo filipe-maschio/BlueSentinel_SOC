@@ -3,11 +3,12 @@ requests
 schedule
 python-dotenv
 
-# SpiderFoot runtime deps
-cherrypy
-cherrypy-cors
-cryptography
-dnspython
+# SpiderFoot critical deps (FIXED)
+cryptography==3.4.8
+pyOpenSSL==21.0.0
+dnspython==2.3.0
+cherrypy==18.8.0
+cherrypy-cors==1.6.0
 
 # SpiderFoot full dependencies
 adblockparser>=0.7,<1
@@ -24,7 +25,6 @@ pygexf>=0.2.2,<0.3
 PyPDF2>=1.28.6,<2
 python-whois>=0.7.3,<0.8
 secure>=0.3.0,<0.4.0
-pyOpenSSL>=21.0.0,<22
 python-docx>=0.8.11,<0.9
 python-pptx>=0.6.21,<0.7
 networkx>=2.6.3,<2.7
