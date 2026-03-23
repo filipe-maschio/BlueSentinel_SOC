@@ -1,4 +1,4 @@
-# 🛡️ BlueSentinel SOC v1.0
+# 🛡️ BlueSentinel SOC v1.1
 
 Automated OSINT-based Security Monitoring System (Mini SOC)
 
@@ -6,13 +6,14 @@ Automated OSINT-based Security Monitoring System (Mini SOC)
 
 ## 📌 Overview
 
-BlueSentinel SOC is an automated pipeline that:
+BlueSentinel SOC is an automated security monitoring pipeline that:
 
-* Collects OSINT data using SpiderFoot
-* Detects new exposures over time
-* Classifies risk levels (HIGH / MEDIUM / LOW)
-* Sends alerts via Telegram
-* Runs automatically via scheduler
+- Collects OSINT data using SpiderFoot
+- Detects new exposures over time
+- Classifies risk levels (HIGH / MEDIUM / LOW)
+- Sends alerts via Telegram
+- Runs automatically via a scheduler
+- Provides structured logging and execution control
 
 ---
 
@@ -32,8 +33,8 @@ BlueSentinel SOC is an automated pipeline that:
 
 ## ⚙️ Requirements
 
-* Python **3.11**
-* Git
+- Python **3.11**
+- Git
 
 ---
 
@@ -84,7 +85,7 @@ git clone https://github.com/smicallef/spiderfoot.git external/spiderfoot
 
 ## 🔐 Environment variables
 
-Create `.env`:
+Create a `.env` file:
 
 ```
 TELEGRAM_TOKEN=your_token
@@ -123,11 +124,22 @@ python -m modules.detection_engine.compare_by_target
 
 ---
 
-### Run full pipeline
+### Run full pipeline (recommended)
 
 ```
 python -m modules.scheduler.scheduler
 ```
+
+---
+
+## ⚙️ Features (v1.1)
+
+- Structured logging system
+- Concurrency control with file locking
+- Retry mechanism for Telegram alerts
+- Deduplication of alerts
+- Spinner-based CLI feedback (UX improvement)
+- Robust error handling (no silent failures)
 
 ---
 
@@ -146,42 +158,83 @@ data/
 
 ## ⚠️ Troubleshooting
 
-### SpiderFoot not found
+### ❌ Module not found
 
-Make sure you installed:
+Run:
+
+```
+pip install -r requirements.txt
+```
+
+---
+
+### ❌ SpiderFoot not found
+
+Make sure this exists:
 
 ```
 external/spiderfoot/sf.py
 ```
 
+If not:
+
+```
+git clone https://github.com/smicallef/spiderfoot.git external/spiderfoot
+```
+
 ---
 
-### No alerts triggered
+### ❌ Pipeline appears "stuck"
 
-* Ensure at least 2 scans exist per target
-* Detection compares previous vs latest scan
+This is expected.
+
+SpiderFoot can take time to execute depending on the target.
 
 ---
 
-### Telegram not sending
+### ❌ Unicode / encoding errors (Windows)
 
-* Check `.env`
-* Validate token and chat_id
+Ensure no emojis are used in backend modules:
+
+- spiderfoot_automation.py
+- compare_by_target.py
+
+---
+
+### ❌ No alerts triggered
+
+- Ensure at least **2 scans per target**
+- Detection compares previous vs latest scan
+
+---
+
+### ❌ Telegram not sending
+
+- Check `.env`
+- Validate token and chat_id
 
 ---
 
 ## 🚀 Roadmap
 
-* Docker support
-* API (FastAPI)
-* Dashboard
-* Cloud deployment
+### v1.2 (next)
+
+- Remove subprocess (direct module integration)
+- Pipeline abstraction layer
+- Config centralization
+
+### Future
+
+- FastAPI service
+- Web dashboard
+- Docker support
+- Cloud deployment
 
 ---
 
 ## 📌 Status
 
-Stable v1.0 baseline
+✅ Stable v1.1 (production-ready baseline)
 
 ---
 
@@ -189,4 +242,4 @@ Stable v1.0 baseline
 
 Developed by **Fill "Filipe Maschio"**
 
-If this project helped you, give it a star ⭐
+If this project helped you, consider giving it a ⭐ on GitHub
