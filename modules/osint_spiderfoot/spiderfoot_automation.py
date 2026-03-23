@@ -3,6 +3,10 @@ import sys
 import subprocess
 from datetime import datetime
 from shared.paths import DATA_DIR, TARGETS_FILE, SPIDERFOOT_PATH
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 def sanitize_target(target):
@@ -19,7 +23,7 @@ def load_targets():
 
 
 def run_scan(target):
-    print(f"[+] Running scan for: {target}")
+    log.info(f"Running scan for: {target}")
 
     safe_target = sanitize_target(target)
 
@@ -58,10 +62,9 @@ def run_scan(target):
             )
 
         if result.returncode != 0:
-            print(f"Error running scan for {target}")
-            print(result.stderr[:500])
+            log.error(f"Error running scan for {target}: {result.stderr[:500]}")
         else:
-            print(f"Scan saved: {output_file}")
+            log.info(f"Scan saved: {output_file}")
 
     except subprocess.TimeoutExpired:
         print(f"Timeout running scan for {target}")

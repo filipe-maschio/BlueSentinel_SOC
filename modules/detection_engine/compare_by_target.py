@@ -38,11 +38,8 @@ def clean_text(text):
     return re.sub(r"<SFURL>(.*?)</SFURL>", r"\1", text)
 
 
-def print_target_header(target, index):
-    print("\n####################################")
-    print(f"#           TARGET # {index}             #")
-    print("####################################")
-    print(f"{target}\n")
+def log_target_header(target, index):
+    log.info(f"===== TARGET #{index} | {target} =====")
 
 
 def group_files_by_target():
@@ -183,7 +180,7 @@ def main():
         target_path = data["path"]
         files = data["files"]
 
-        print_target_header(target, idx)
+        log_target_header(target, idx)
 
         files.sort()
 
@@ -194,7 +191,7 @@ def main():
         old_file = files[-2]
         new_file = files[-1]
 
-        print(f"Comparing:\n - {old_file}\n - {new_file}")
+        log.info(f"Comparing {old_file} vs {new_file}")
 
         new_items = compare_files(target_path, old_file, new_file)
 
@@ -246,7 +243,7 @@ def main():
 
         message = "\n".join(message_lines)
 
-        print(message)
+        log.info(f"\n{message}")
 
         try:
             send_telegram_alert(message)

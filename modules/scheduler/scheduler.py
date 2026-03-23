@@ -1,51 +1,35 @@
 import time
-import schedule
 import subprocess
 import sys
-from datetime import datetime
-from infrastructure.logging import setup_logging
 import logging
 from filelock import FileLock, Timeout
-import threading
-import itertools
+from infrastructure.logging import setup_logging
+from datetime import datetime
 
 
 LOCK_FILE = "pipeline.lock"
 log = logging.getLogger(__name__)
 
 
-def print_banner():
-    print("\n=====================================")
-    print(" 🛡️  BlueSentinel SOC Pipeline START")
-    print(f" 🕒  {datetime.now()}")
-    print("=====================================\n")
-
-
-def spinner(stop_event, message="Processing"):
-    for char in itertools.cycle(["|", "/", "-", "\\"]):
-        if stop_event.is_set():
-            break
-        sys.stdout.write(f"\r{message}... {char}")
-        sys.stdout.flush()
-        time.sleep(0.1)
-
-    sys.stdout.write("\r" + " " * (len(message) + 10) + "\r")
-
-
 def run_pipeline():
+    # 🔥 garante logging sempre
+    setup_logging()
+
+    pipeline_start = time.time()
+
     lock = FileLock(LOCK_FILE, timeout=1)
 
     try:
         with lock:
-            print_banner()
-            log.info("Pipeline started")
+            log.info("")
+            log.info("=" * 60)
+            log.info(f"NEW PIPELINE EXECUTION | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            log.info("=" * 60)
 
-            stop_event = threading.Event()
-            thread = threading.Thread(
-                target=spinner,
-                args=(stop_event, "Running SpiderFoot")
-            )
-            thread.start()
+            # ================================
+            # 🔍 SPIDERFOOT
+            # ================================
+            spider_start = time.time()
 
             result = subprocess.run(
                 [
@@ -54,24 +38,33 @@ def run_pipeline():
                     "modules.osint_spiderfoot.spiderfoot_automation"
                 ],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=600
             )
 
-            stop_event.set()
-            thread.join()
+            clean_output = "\n".join(
+                line for line in result.stdout.splitlines() if line.strip()
+            )
+
+            log.info("----- SPIDERFOOT START -----")
+
+            if clean_output:
+                for line in clean_output.splitlines():
+                    log.info(f"[SpiderFoot] {line}")
+
+            log.info("----- SPIDERFOOT END -----")
 
             if result.returncode != 0:
                 log.error(f"SpiderFoot error:\n{result.stderr}")
                 raise RuntimeError("SpiderFoot failed")
 
             log.info("SpiderFoot step completed")
+            log.info(f"SpiderFoot duration: {time.time() - spider_start:.2f}s")
 
-            stop_event = threading.Event()
-            thread = threading.Thread(
-                target=spinner,
-                args=(stop_event, "Running Detection")
-            )
-            thread.start()
+            # ================================
+            # 🧠 DETECTION
+            # ================================
+            detection_start = time.time()
 
             result = subprocess.run(
                 [
@@ -80,43 +73,47 @@ def run_pipeline():
                     "modules.detection_engine.compare_by_target"
                 ],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=600
             )
 
-            stop_event.set()
-            thread.join()
+            clean_output = "\n".join(
+                line for line in result.stdout.splitlines() if line.strip()
+            )
+
+            log.info("----- DETECTION START -----")
+
+            if clean_output:
+                for line in clean_output.splitlines():
+                    log.info(f"[Detection] {line}")
+
+            log.info("----- DETECTION END -----")
 
             if result.returncode != 0:
                 log.error(f"Detection error:\n{result.stderr}")
                 raise RuntimeError("Detection failed")
 
             log.info("Detection step completed")
+            log.info(f"Detection duration: {time.time() - detection_start:.2f}s")
 
+            # ================================
+            # ✅ FINAL
+            # ================================
+            log.info(f"Total pipeline duration: {time.time() - pipeline_start:.2f}s")
             log.info("Pipeline finished successfully")
+            log.info("=" * 60)
+            log.info("")
 
     except Timeout:
-        log.warning("Pipeline already running. Skipping.")
+        log.warning("Pipeline already running. Skipping this execution.")
+        return
 
     except Exception:
         log.exception("Unexpected error during pipeline execution")
 
 
 def main():
-    setup_logging()
-
-    log.info("BlueSentinel SOC Scheduler started")
-
-    schedule.every().monday.at("10:00").do(run_pipeline)
-
     run_pipeline()
-
-    while True:
-        try:
-            schedule.run_pending()
-            time.sleep(10)
-        except Exception:
-            log.exception("Scheduler loop error")
-            time.sleep(5)
 
 
 if __name__ == "__main__":
