@@ -2,11 +2,13 @@ import os
 import json
 import time
 import re
-from collections import defaultdict
-from modules.alerting.alert_telegram import send_telegram_alert
-from shared.paths import DATA_DIR
+import logging
 from filelock import FileLock
 
+from modules.alerting.alert_telegram import send_telegram_alert
+from shared.paths import DATA_DIR
+
+log = logging.getLogger(__name__)
 
 DATA_PATH = DATA_DIR
 
@@ -15,59 +17,65 @@ def load_alert_history():
     history_path = os.path.join(DATA_PATH, "alert_history.log")
 
     if not os.path.exists(history_path):
+        log.info("No alert history found, starting fresh")
         return set()
 
     history = set()
 
-    with open(history_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-
-            if not line:
-                continue
-
-            # esperado: target|item
-            history.add(line)
+    try:
+        with open(history_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    history.add(line)
+    except Exception as e:
+        log.exception(f"Failed to load alert history: {e}")
 
     return history
-    
+
 
 def clean_text(text):
-    # 🔥 remove <SFURL>
-    text = re.sub(r"<SFURL>(.*?)</SFURL>", r"\1", text)
-    return text
+    return re.sub(r"<SFURL>(.*?)</SFURL>", r"\1", text)
 
 
 def print_target_header(target, index):
     print("\n####################################")
     print(f"#           TARGET # {index}             #")
     print("####################################")
-    print(f"🧠 {target}\n")
+    print(f"{target}\n")
 
 
 def group_files_by_target():
     base_path = os.path.join(DATA_PATH, "spiderfoot_outputs")
 
+    if not os.path.exists(base_path):
+        log.warning(f"SpiderFoot output path not found: {base_path}")
+        return {}
+
     groups = {}
 
-    for target in os.listdir(base_path):
-        target_path = os.path.join(base_path, target)
+    try:
+        for target in os.listdir(base_path):
+            target_path = os.path.join(base_path, target)
 
-        if not os.path.isdir(target_path):
-            continue
+            if not os.path.isdir(target_path):
+                continue
 
-        files = [
-            f for f in os.listdir(target_path)
-            if f.endswith(".json")
-        ]
+            files = [
+                f for f in os.listdir(target_path)
+                if f.endswith(".json")
+            ]
 
-        if len(files) < 2:
-            continue
+            if len(files) < 2:
+                continue
 
-        groups[target] = {
-            "path": target_path,
-            "files": files
-        }
+            groups[target] = {
+                "path": target_path,
+                "files": files
+            }
+
+    except Exception as e:
+        log.exception(f"Error grouping files: {e}")
 
     return groups
 
@@ -75,24 +83,28 @@ def group_files_by_target():
 def load_json(path):
     data = []
 
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
 
-            if not line:
-                continue
+                if not line:
+                    continue
 
-            line = line.rstrip(",")
-            line = line.replace("[]", "")
+                line = line.rstrip(",")
+                line = line.replace("[]", "")
 
-            try:
-                parsed = json.loads(line)
+                try:
+                    parsed = json.loads(line)
 
-                if isinstance(parsed, dict):
-                    data.append(parsed)
+                    if isinstance(parsed, dict):
+                        data.append(parsed)
 
-            except Exception:
-                print(f"⚠️ Skipping invalid line: {line[:80]}...")
+                except Exception as e:
+                    log.warning(f"Skipping invalid JSON line: {e}")
+
+    except Exception as e:
+        log.exception(f"Failed to read file {path}: {e}")
 
     return data
 
@@ -116,7 +128,7 @@ def compare_files(target_path, old_file, new_file):
     new_data = load_json(os.path.join(target_path, new_file))
 
     if not old_data or not new_data:
-        print("⚠️ Invalid data detected, skipping comparison...")
+        log.warning(f"Invalid data for files: {old_file}, {new_file}")
         return set()
 
     old_entities = extract_entities(old_data)
@@ -148,19 +160,24 @@ def calculate_risk_score(high, medium, low):
 
 def save_alert(target, items):
     history_path = os.path.join(DATA_PATH, "alert_history.log")
-
     lock = FileLock(history_path + ".lock")
 
-    with lock:
-        with open(history_path, "a", encoding="utf-8") as f:
-            for item in items:
-                f.write(f"{target}|{item}\n")
+    try:
+        with lock:
+            with open(history_path, "a", encoding="utf-8") as f:
+                for item in items:
+                    f.write(f"{target}|{item}\n")
+
+    except Exception as e:
+        log.exception(f"Failed to save alert history: {e}")
 
 
 def main():
+    log.info("Starting detection engine")
+
     groups = group_files_by_target()
     alert_history = load_alert_history()
-    
+
     for idx, (target, data) in enumerate(groups.items(), start=1):
 
         target_path = data["path"]
@@ -171,6 +188,7 @@ def main():
         files.sort()
 
         if len(files) < 2:
+            log.warning(f"Not enough files for target {target}")
             continue
 
         old_file = files[-2]
@@ -180,25 +198,18 @@ def main():
 
         new_items = compare_files(target_path, old_file, new_file)
 
-        filtered_items = set()
+        filtered_items = {
+            item for item in new_items
+            if f"{target}|{item}" not in alert_history
+        }
 
-        for item in new_items:
-            key = f"{target}|{item}"
-
-            if key not in alert_history:
-                filtered_items.add(item)
-
-        new_items = filtered_items
-
-        if not new_items:
-            print("✅ No changes detected")
+        if not filtered_items:
+            log.info(f"No changes detected for {target}")
             continue
 
-        high_items = []
-        medium_items = []
-        low_items = []
+        high_items, medium_items, low_items = [], [], []
 
-        for item in new_items:
+        for item in filtered_items:
             risk = classify_risk(item)
 
             if risk == "HIGH":
@@ -214,32 +225,34 @@ def main():
             len(low_items)
         )
 
-        message = f"🚨 ALERT - {target}\n\n"
+        message_lines = [f"ALERT - {target}", ""]
 
         if high_items:
-            message += f"🔴 HIGH ({len(high_items)})\n"
-            for item in high_items:
-                message += f"- {item}\n"
-            message += "\n"
+            message_lines.append(f"HIGH ({len(high_items)})")
+            message_lines.extend(f"- {item}" for item in high_items)
+            message_lines.append("")
 
         if medium_items:
-            message += f"🟡 MEDIUM ({len(medium_items)})\n"
-            for item in medium_items:
-                message += f"- {item}\n"
-            message += "\n"
+            message_lines.append(f"MEDIUM ({len(medium_items)})")
+            message_lines.extend(f"- {item}" for item in medium_items)
+            message_lines.append("")
 
         if low_items:
-            message += f"🟢 LOW ({len(low_items)})\n"
-            for item in low_items:
-                message += f"- {item}\n"
-            message += "\n"
+            message_lines.append(f"LOW ({len(low_items)})")
+            message_lines.extend(f"- {item}" for item in low_items)
+            message_lines.append("")
 
-        message += f"📊 Risk Score: {score}\n"
+        message_lines.append(f"Risk Score: {score}")
+
+        message = "\n".join(message_lines)
 
         print(message)
 
-        send_telegram_alert(message)
-        save_alert(target, new_items)
+        try:
+            send_telegram_alert(message)
+            save_alert(target, filtered_items)
+        except Exception as e:
+            log.exception(f"Failed to send/save alert for {target}: {e}")
 
         time.sleep(2)
 

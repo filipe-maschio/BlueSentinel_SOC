@@ -35,15 +35,17 @@ def send_telegram_alert(message):
         try:
             log.info(f"Sending alert (attempt {attempt}/{MAX_RETRIES})")
 
-            response = requests.post(url, json=payload, timeout=10)
+            response = requests.post(url, json=payload, timeout=10)  # TODO: move to config
 
-            # valida resposta HTTP
             if response.status_code != 200:
                 log.warning(f"HTTP error {response.status_code}: {response.text}")
                 raise RuntimeError("Telegram HTTP error")
 
-            # valida resposta Telegram
-            data = response.json()
+            try:
+                data = response.json()
+            except ValueError:
+                log.error(f"Invalid JSON response: {response.text[:200]}")
+                raise RuntimeError("Invalid Telegram response")
             if not data.get("ok"):
                 log.error(f"Telegram API error: {data}")
                 raise RuntimeError("Telegram API returned error")
@@ -54,10 +56,9 @@ def send_telegram_alert(message):
         except requests.exceptions.RequestException as e:
             log.warning(f"Network error on attempt {attempt}: {e}")
 
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             log.warning(f"Attempt {attempt} failed: {e}")
 
-        # retry com backoff exponencial
         if attempt < MAX_RETRIES:
             delay = RETRY_DELAY * (2 ** (attempt - 1))
             log.info(f"Retrying in {delay}s...")

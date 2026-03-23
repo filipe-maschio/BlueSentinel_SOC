@@ -2,6 +2,7 @@
 requests
 schedule
 python-dotenv
+filelock
 
 # SpiderFoot critical deps (FIXED)
 cryptography==3.4.8

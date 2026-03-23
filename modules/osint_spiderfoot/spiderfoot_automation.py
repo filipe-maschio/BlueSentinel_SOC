@@ -11,7 +11,7 @@ def sanitize_target(target):
 
 def load_targets():
     if not os.path.exists(TARGETS_FILE):
-        print(f"❌ Targets file not found: {TARGETS_FILE}")
+        print(f"Targets file not found: {TARGETS_FILE}")
         return []
 
     with open(TARGETS_FILE, encoding="utf-8") as f:
@@ -40,13 +40,12 @@ def run_scan(target):
 
             env = os.environ.copy()
 
-            # 🔥 AQUI ESTÁ A CHAVE
             env["PYTHONPATH"] = spiderfoot_dir
 
             result = subprocess.run(
                 [
                     sys.executable,
-                    SPIDERFOOT_PATH,  # 🔥 USAR CAMINHO COMPLETO
+                    SPIDERFOOT_PATH,
                     "-s", target,
                     "-o", "json"
                 ],
@@ -59,32 +58,32 @@ def run_scan(target):
             )
 
         if result.returncode != 0:
-            print(f"❌ Error running scan for {target}")
+            print(f"Error running scan for {target}")
             print(result.stderr[:500])
         else:
-            print(f"✅ Scan saved: {output_file}")
+            print(f"Scan saved: {output_file}")
 
     except subprocess.TimeoutExpired:
-        print(f"⏱️ Timeout running scan for {target}")
+        print(f"Timeout running scan for {target}")
 
     except Exception as e:
-        print(f"❌ Unexpected error for {target}: {e}")
+        print(f"Unexpected error for {target}: {e}")
 
 
 def main():
-    print("\n🕷️   SpiderFoot Automation Started\n")
+    print("\nSpiderFoot Automation Started\n")
 
     targets = load_targets()
 
     if not targets:
-        print("⚠️ No targets found. Exiting...")
+        print("No targets found. Exiting...")
         return
 
     for target in targets:
-        print(f"\n🎯 Processing target: {target}")
+        print(f"\nProcessing target: {target}")
         run_scan(target)
 
-    print("\n✅ SpiderFoot Automation Finished\n")
+    print("\nSpiderFoot Automation Finished\n")
 
 
 if __name__ == "__main__":
