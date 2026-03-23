@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 def print_banner():
     print("\n=====================================")
-    print(" 🚀  BlueSentinel SOC Pipeline START")
+    print(" 🛡️  BlueSentinel SOC Pipeline START")
     print(f" 🕒  {datetime.now()}")
     print("=====================================\n")
 
