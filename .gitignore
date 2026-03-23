@@ -42,6 +42,5 @@ node_modules/
 ############################
 #          Custom          #
 ############################
-external/spiderfoot/
 config/targets_for_spiderfoot.txt
-
+external/

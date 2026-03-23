@@ -72,7 +72,7 @@ def run_scan(target):
 
 
 def main():
-    print("\n🕷️ SpiderFoot Automation Started\n")
+    print("\n🕷️  SpiderFoot Automation Started\n")
 
     targets = load_targets()
 

@@ -1,22 +1,22 @@
-# 🛡️ BlueSentinel SOC
+# 🛡️ BlueSentinel SOC v1.0
 
 Automated OSINT-based Security Monitoring System (Mini SOC)
 
 ---
 
-## Overview
+## 📌 Overview
 
 BlueSentinel SOC is an automated pipeline that:
 
-- Collects OSINT data using SpiderFoot;
-- Detects new exposures over time;
-- Classifies risk levels (HIGH / MEDIUM / LOW);
-- Sends alerts via Telegram;
-- Runs automatically via scheduler.
+* Collects OSINT data using SpiderFoot
+* Detects new exposures over time
+* Classifies risk levels (HIGH / MEDIUM / LOW)
+* Sends alerts via Telegram
+* Runs automatically via scheduler
 
 ---
 
-## Architecture
+## 🧠 Architecture
 
 ```
 [ Scheduler ]
@@ -30,37 +30,14 @@ BlueSentinel SOC is an automated pipeline that:
 
 ---
 
-## Features
+## ⚙️ Requirements
 
-- Continuous OSINT monitoring;
-- Risk classification engine;
-- Telegram alerting with retry;
-- Deduplication (no alert spam);
-- Historical scan tracking;
-- Automated scheduling.
+* Python **3.11**
+* Git
 
 ---
 
-## Project Structure
-
-```
-modules/
- ├── osint_spiderfoot/
- ├── detection_engine/
- ├── alerting/
- └── scheduler/
-
-data/
- ├── spiderfoot_outputs/
- └── alerts/
-
-config/
- └── targets_for_spiderfoot.txt
-```
-
----
-
-## Setup
+## 🚀 Setup
 
 ### 1. Clone repository
 
@@ -73,9 +50,18 @@ cd BlueSentinel_SOC
 
 ### 2. Create virtual environment
 
+#### Windows:
+
 ```
 python -m venv venv
 .\venv\Scripts\activate
+```
+
+#### Linux / Mac:
+
+```
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 ---
@@ -88,7 +74,15 @@ pip install -r requirements.txt
 
 ---
 
-### 4. Configure environment variables
+## 🕷️ Install SpiderFoot (REQUIRED)
+
+```
+git clone https://github.com/smicallef/spiderfoot.git external/spiderfoot
+```
+
+---
+
+## 🔐 Environment variables
 
 Create `.env`:
 
@@ -99,7 +93,7 @@ TELEGRAM_CHAT_ID=your_chat_id
 
 ---
 
-### 5. Add targets
+## 🎯 Add targets
 
 Edit:
 
@@ -107,22 +101,29 @@ Edit:
 config/targets_for_spiderfoot.txt
 ```
 
-Add one email address per line. Do not use commas or colons.
+Add one email per line.
 
 ---
 
-## Running
+## ▶️ Running
 
-### Manual pipeline
+### Run SpiderFoot scan
 
 ```
 python -m modules.osint_spiderfoot.spiderfoot_automation
+```
+
+---
+
+### Run detection
+
+```
 python -m modules.detection_engine.compare_by_target
 ```
 
 ---
 
-### Scheduler
+### Run full pipeline
 
 ```
 python -m modules.scheduler.scheduler
@@ -130,27 +131,62 @@ python -m modules.scheduler.scheduler
 
 ---
 
-## Roadmap
+## 📂 Output
 
-- OSINT collection;
-- Detection engine;
-- Risk classification;
-- Telegram alerting;
-- Deduplication system;
-- Docker support;
-- Dashboard;
-- Cloud deployment.
-
----
-
-## Status
-
-Functional automated SOC pipeline.
+```
+data/
+ ├── spiderfoot_outputs/
+ │    └── <target>/
+ │         └── scan_YYYYMMDD_HHMMSS.json
+ │
+ └── alert_history.log
+```
 
 ---
 
-## Author
+## ⚠️ Troubleshooting
+
+### SpiderFoot not found
+
+Make sure you installed:
+
+```
+external/spiderfoot/sf.py
+```
+
+---
+
+### No alerts triggered
+
+* Ensure at least 2 scans exist per target
+* Detection compares previous vs latest scan
+
+---
+
+### Telegram not sending
+
+* Check `.env`
+* Validate token and chat_id
+
+---
+
+## 🚀 Roadmap
+
+* Docker support
+* API (FastAPI)
+* Dashboard
+* Cloud deployment
+
+---
+
+## 📌 Status
+
+Stable v1.0 baseline
+
+---
+
+## 👨‍💻 Author
 
 Developed by **Fill "Filipe Maschio"**
 
-If this project helped you, give it a star on GitHub ⭐
+If this project helped you, give it a star ⭐
