@@ -2,6 +2,9 @@ import os
 import time
 import requests
 from dotenv import load_dotenv
+import logging
+
+log = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -15,8 +18,8 @@ RETRY_DELAY = 2  # segundos
 
 def send_telegram_alert(message):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print("❌ Telegram credentials not set")
-        return
+        log.error("Telegram credentials not set")
+        raise ValueError("Missing Telegram credentials")
 
     if len(message) > MAX_LEN:
         message = message[:MAX_LEN] + "\n...[truncated]"
@@ -30,25 +33,35 @@ def send_telegram_alert(message):
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            print(f"📡 Sending alert (attempt {attempt}/{MAX_RETRIES})...")
+            log.info(f"Sending alert (attempt {attempt}/{MAX_RETRIES})")
 
             response = requests.post(url, json=payload, timeout=10)
 
-            if response.status_code == 200:
-                print("✅ Alert sent successfully to Telegram")
-                return
-            else:
-                print(f"⚠️ Attempt {attempt} failed: {response.text}")
+            # valida resposta HTTP
+            if response.status_code != 200:
+                log.warning(f"HTTP error {response.status_code}: {response.text}")
+                raise RuntimeError("Telegram HTTP error")
+
+            # valida resposta Telegram
+            data = response.json()
+            if not data.get("ok"):
+                log.error(f"Telegram API error: {data}")
+                raise RuntimeError("Telegram API returned error")
+
+            log.info("Alert sent successfully to Telegram")
+            return
+
+        except requests.exceptions.RequestException as e:
+            log.warning(f"Network error on attempt {attempt}: {e}")
 
         except Exception as e:
-            print(f"⚠️ Attempt {attempt}/{MAX_RETRIES} failed")
+            log.warning(f"Attempt {attempt} failed: {e}")
 
-            if attempt == MAX_RETRIES:
-                print(f"❌ Final error: {str(e)[:150]}")
-
-        # espera antes do próximo retry
+        # retry com backoff exponencial
         if attempt < MAX_RETRIES:
-            print(f"⏳ Retrying in {RETRY_DELAY}s...\n")
-            time.sleep(RETRY_DELAY)
+            delay = RETRY_DELAY * (2 ** (attempt - 1))
+            log.info(f"Retrying in {delay}s...")
+            time.sleep(delay)
 
-    print("🚨 Failed to send alert after multiple attempts")
+    log.error("Failed to send alert after retries")
+    raise RuntimeError("Telegram alert failed after retries")

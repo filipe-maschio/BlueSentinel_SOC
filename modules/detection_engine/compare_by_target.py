@@ -5,6 +5,7 @@ import re
 from collections import defaultdict
 from modules.alerting.alert_telegram import send_telegram_alert
 from shared.paths import DATA_DIR
+from filelock import FileLock
 
 
 DATA_PATH = DATA_DIR
@@ -148,9 +149,12 @@ def calculate_risk_score(high, medium, low):
 def save_alert(target, items):
     history_path = os.path.join(DATA_PATH, "alert_history.log")
 
-    with open(history_path, "a", encoding="utf-8") as f:
-        for item in items:
-            f.write(f"{target}|{item}\n")
+    lock = FileLock(history_path + ".lock")
+
+    with lock:
+        with open(history_path, "a", encoding="utf-8") as f:
+            for item in items:
+                f.write(f"{target}|{item}\n")
 
 
 def main():

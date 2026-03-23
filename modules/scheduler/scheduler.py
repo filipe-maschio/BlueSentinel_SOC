@@ -3,60 +3,62 @@ import schedule
 import subprocess
 import sys
 from datetime import datetime
+from infrastructure.logging import setup_logging
+import logging
+from filelock import FileLock, Timeout
 
-RUNNING = False
+
+LOCK_FILE = "pipeline.lock"
+log = logging.getLogger(__name__)
 
 
-def run_pipeline():
-    global RUNNING
-
-    if RUNNING:
-        print()
-        print("⚠️ Pipeline already running. Skipping...\n")
-        return
-
-    RUNNING = True
-
+def print_banner():
     print("\n=====================================")
     print(" 🚀  BlueSentinel SOC Pipeline START")
     print(f" 🕒  {datetime.now()}")
     print("=====================================\n")
 
+
+def run_pipeline():
+    lock = FileLock(LOCK_FILE, timeout=1)
+
     try:
-        # 1. OSINT (SpiderFoot)
-        subprocess.run([
-            sys.executable,
-            "-m",
-            "modules.osint_spiderfoot.spiderfoot_automation"
-        ], check=True)
+        with lock:
+            print_banner()
+            log.info("Pipeline START")
 
-        # 2. Detection + Alert
-        subprocess.run([
-            sys.executable,
-            "-m",
-            "modules.detection_engine.compare_by_target"
-        ], check=True)
+            subprocess.run([
+                sys.executable,
+                "-m",
+                "modules.osint_spiderfoot.spiderfoot_automation"
+            ], check=True)
 
-        print("\n✅ Pipeline finished successfully\n")
+            subprocess.run([
+                sys.executable,
+                "-m",
+                "modules.detection_engine.compare_by_target"
+            ], check=True)
+
+            log.info("Pipeline finished successfully")
+
+    except Timeout:
+        log.warning("Pipeline already running. Skipping.")
 
     except subprocess.CalledProcessError as e:
-        print(f"❌ Subprocess error: {e}")
+        log.error(f"Subprocess error: {e}")
 
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-
-    finally:
-        RUNNING = False
+    except Exception:
+        log.exception("Unexpected error")
 
 
 def main():
-    print()
-    print("🧠 BlueSentinel SOC Scheduler started...\n")
+    setup_logging()
 
-    # 🔥 PRODUÇÃO: roda 1x por semana
+    log.info("BlueSentinel SOC Scheduler started")
+
     schedule.every().monday.at("10:00").do(run_pipeline)
 
-    # 🔥 TESTE: executa ao iniciar
+    # execução imediata (modo teste/dev)
     run_pipeline()
 
     while True:
