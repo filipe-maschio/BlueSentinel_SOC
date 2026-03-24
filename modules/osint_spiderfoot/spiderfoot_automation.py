@@ -15,7 +15,7 @@ def sanitize_target(target):
 
 def load_targets():
     if not os.path.exists(TARGETS_FILE):
-        print(f"Targets file not found: {TARGETS_FILE}")
+        log.error(f"Targets file not found: {TARGETS_FILE}")
         return []
 
     with open(TARGETS_FILE, encoding="utf-8") as f:
@@ -67,26 +67,26 @@ def run_scan(target):
             log.info(f"Scan saved: {output_file}")
 
     except subprocess.TimeoutExpired:
-        print(f"Timeout running scan for {target}")
+        log.warning(f"Timeout running scan for {target}")
 
     except Exception as e:
-        print(f"Unexpected error for {target}: {e}")
+        log.exception(f"Unexpected error for {target}: {e}")
 
 
 def main():
-    print("\nSpiderFoot Automation Started\n")
+    log.info("SpiderFoot Automation Started")
 
     targets = load_targets()
 
     if not targets:
-        print("No targets found. Exiting...")
+        log.warning("No targets found. Exiting...")
         return
 
     for target in targets:
-        print(f"\nProcessing target: {target}")
+        log.info(f"\nProcessing target: {target}")
         run_scan(target)
 
-    print("\nSpiderFoot Automation Finished\n")
+    log.info("\nSpiderFoot Automation Finished\n")
 
 
 if __name__ == "__main__":
