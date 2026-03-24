@@ -23,7 +23,7 @@ def load_targets():
 
 
 def run_scan(target):
-    log.info(f"Running scan for: {target}")
+    log.info(f"[SpiderFoot] Running scan for: {target}")
 
     safe_target = sanitize_target(target)
 
@@ -69,8 +69,8 @@ def run_scan(target):
     except subprocess.TimeoutExpired:
         log.warning(f"Timeout running scan for {target}")
 
-    except Exception as e:
-        log.exception(f"Unexpected error for {target}: {e}")
+    except Exception:
+        log.exception(f"Unexpected error for {target}")
 
 
 def main():
@@ -83,10 +83,10 @@ def main():
         return
 
     for target in targets:
-        log.info(f"\nProcessing target: {target}")
+        log.info(f"Processing target: {target}")
         run_scan(target)
 
-    log.info("\nSpiderFoot Automation Finished\n")
+    log.info("SpiderFoot Automation Finished")
 
 
 if __name__ == "__main__":
