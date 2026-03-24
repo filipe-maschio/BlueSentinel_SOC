@@ -34,6 +34,7 @@ BlueSentinel SOC is an automated security monitoring pipeline that:
 
 - Python **3.11**
 - Git
+- Windows (PowerShell recommended)
 
 ---
 
@@ -41,8 +42,10 @@ BlueSentinel SOC is an automated security monitoring pipeline that:
 
 ### 1. Clone repository
 
-git clone  "your-repo-url"
-cd BlueSentinel_SOC
+```
+git clone https://github.com/filipe-maschio/BlueSentinel_SOC.git
+cd BlueSentinel_SOC`
+```
 
 ---
 
@@ -50,25 +53,33 @@ cd BlueSentinel_SOC
 
 #### Windows
 
-python -m venv venv  
+```
+python -m venv venv
 .\venv\Scripts\activate
+```
 
 #### Linux / Mac
 
+```
 python3 -m venv venv  
 source venv/bin/activate
+```
 
 ---
 
 ### 3. Install dependencies
 
+```
 pip install -r requirements.txt
+```
 
 ---
 
 ## 🕷️ Install SpiderFoot (required)
 
+```
 git clone https://github.com/smicallef/spiderfoot.git external/spiderfoot
+```
 
 BlueSentinel uses a local SpiderFoot checkout under:
 
@@ -78,45 +89,91 @@ external/spiderfoot
 
 ## 🔐 Environment variables
 
-Create a `.env` file based on `.env.example`:
+Create the `.env` file from the example:
 
-TELEGRAM_TOKEN=your_token  
+#### Windows
+
+```
+copy .env.example .env
+notepad .env
+```
+
+#### Linux / Mac
+
+```
+cp .env.example .env
+nano .env
+```
+
+
+Inside the `.env` file, you must configure your Telegram credentials:
+
+```
+TELEGRAM_TOKEN=your_token
 TELEGRAM_CHAT_ID=your_chat_id
+```
+
+### How to get these values
+
+- **TELEGRAM_TOKEN** → create a bot via BotFather
+- **TELEGRAM_CHAT_ID** → your personal chat ID or group ID
+
+⚠️ This step is required — without it, alerts will not be sent.
 
 ---
 
 ## 🎯 Add targets
 
-Edit:
+Create the targets file from the example:
 
-config/targets_for_spiderfoot.txt
+#### Windows
 
-Add one target per line.
+```
+copy config\targets_for_spiderfoot.example.txt config\targets_for_spiderfoot.txt
+notepad config\targets_for_spiderfoot.txt
+```
 
-Typical example:
+#### Linux / Mac
 
-user@example.com  
+```
+cp config/targets_for_spiderfoot.example.txt config/targets_for_spiderfoot.txt
+nano config/targets_for_spiderfoot.txt
+```
+
+
+Add your targets (emails, usernames, domains, etc).
+
+### Rules:
+
+- One target per line
+- No commas
+- No extra characters
+- No spaces before or after
+
+### Example:
+
+```
+user@example.com
 anotheruser@example.com
+```
+
+⚠️ Invalid formatting may break the pipeline.
 
 ---
 
 ## ▶️ Running
 
-### Run SpiderFoot only
-
-python -m modules.osint_spiderfoot.spiderfoot_automation
-
-### Run detection only
-
-python -m modules.detection_engine.detection
-
 ### Run full pipeline (recommended)
 
+```
 python -m modules.scheduler.scheduler
+```
 
 ### Run via launcher (Windows)
 
+```
 run_soc.bat
+```
 
 ---
 
@@ -140,71 +197,56 @@ run_soc.bat
 
 BlueSentinel_SOC/  
 ├── config/  
-│   ├── targets_for_spiderfoot.txt  
-│   └── targets_for_spiderfoot.example.txt  
-├── data/  
-│   ├── spiderfoot_outputs/  
-│   │   └── "target"/  
-│   │       └── scan_YYYYMMDD_HHMMSS.json  
-│   └── alert_history.log  
+│ ├── targets_for_spiderfoot.txt _(local, not versioned)_  
+│ └── targets_for_spiderfoot.example.txt  
+├── data/ _(generated at runtime)_  
+│ ├── spiderfoot_outputs/  
+│ │ └── _target_/  
+│ │ └── scan_YYYYMMDD_HHMMSS.json  
+│ └── alert_history.log  
 ├── infrastructure/  
-│   ├── __init__.py  
-│   └── logging.py  
-├── logs/  
-│   ├── launcher.log  
-│   ├── execution.log  
-│   ├── soc.log  
-│   └── error.log  
+│ ├── **init**.py  
+│ └── logging.py  
+├── logs/ _(generated at runtime)_  
+│ ├── launcher.log  
+│ ├── execution.log  
+│ ├── soc.log  
+│ └── error.log  
 ├── modules/  
-│   ├── alerting/  
-│   │   ├── __init__.py  
-│   │   └── alert_telegram.py  
-│   ├── detection_engine/  
-│   │   ├── __init__.py  
-│   │   ├── compare_by_target.py  
-│   │   └── detection.py  
-│   ├── osint_spiderfoot/  
-│   │   ├── __init__.py  
-│   │   └── spiderfoot_automation.py  
-│   └── scheduler/  
-│       └── scheduler.py  
+│ ├── alerting/  
+│ │ ├── **init**.py  
+│ │ └── alert_telegram.py  
+│ ├── detection_engine/  
+│ │ ├── **init**.py  
+│ │ ├── compare_by_target.py  
+│ │ └── detection.py  
+│ ├── osint_spiderfoot/  
+│ │ ├── **init**.py  
+│ │ └── spiderfoot_automation.py  
+│ └── scheduler/  
+│ └── scheduler.py  
 ├── shared/  
-│   ├── __init__.py  
-│   ├── config.py  
-│   ├── constants.py  
-│   ├── paths.py  
-│   ├── platform_normalizer.py  
-│   └── settings.py  
+│ ├── **init**.py  
+│ ├── config.py  
+│ ├── constants.py  
+│ ├── paths.py  
+│ ├── platform_normalizer.py  
+│ └── settings.py  
 ├── .env.example  
+├── .gitignore  
 ├── requirements.txt  
 └── run_soc.bat
+
+(*) Files marked as local are not versioned and must be created during setup.
 
 ---
 
 ## 📜 Logs
 
-### `launcher.log`
-
-Tracks the Windows launcher / batch execution lifecycle.
-
-Examples:
-
-- START
-- BEFORE PYTHON EXECUTION
-- AFTER PYTHON EXECUTION
-- FINISHED
-
-### `execution.log`
-
-Detailed technical execution log for debugging.
-
-### `soc.log`
-
-Operational pipeline log focused on security workflow visibility.
-
-### `error.log`
-
-Errors and exceptions.
+- `launcher.log` → .bat execution
+- `execution.log` → technical debug
+- `soc.log` → operational pipeline
+- `error.log` → errors
 
 ---
 
@@ -212,15 +254,15 @@ Errors and exceptions.
 
 ### Initial baseline
 
-If a target has no alert history yet, BlueSentinel treats the latest scan as the initial baseline and may send an **INITIAL ALERT** for alertworthy findings.
+First run → may generate INITIAL ALERT.
 
 ### Delta detection
 
-If a target already has history, BlueSentinel compares the latest scan against the previous one and alerts only on new findings not already recorded.
+Subsequent runs → only new findings.
 
 ### Deduplication
 
-Previously alerted findings are stored in `alert_history.log` and suppressed in later runs.
+Stored in `alert_history.log`.
 
 ---
 
@@ -239,43 +281,34 @@ This avoids noisy previews and improves triage quality.
 
 ## ⚠️ Troubleshooting
 
-### Module not found
-
-Install dependencies again:
-
-pip install -r requirements.txt
-
 ### SpiderFoot not found
 
-Ensure this file exists:
+```
+git clone https://github.com/smicallef/spiderfoot.git external\spiderfoot
+```
 
-external/spiderfoot/sf.py
+Check:
 
-If not:
+```
+external\spiderfoot\sf.py
+```
 
-git clone https://github.com/smicallef/spiderfoot.git external/spiderfoot
+---
 
 ### No Telegram alerts
 
 Check:
 
 - `.env`
-- `TELEGRAM_TOKEN`
-- `TELEGRAM_CHAT_ID`
+- token/chat_id
+- alert history
+- new findings
 
-Also verify whether:
+---
 
-- the target already has alert history
-- the latest scan produced alertworthy findings
-- there are actually new findings compared to the previous scan
+### Pipeline stuck
 
-### Pipeline appears slow
-
-SpiderFoot scans can take several minutes depending on the target and enabled modules.
-
-### Windows batch issues
-
-Use the launcher with the virtualenv Python directly, as configured in `run_soc.bat`.
+SpiderFoot scans can take several minutes.
 
 ---
 
@@ -286,9 +319,9 @@ Use the launcher with the virtualenv Python directly, as configured in `run_soc.
 Planned focus areas:
 
 - Event-driven SOC logging
-- Stronger persistence model for alert history
-- Per-target timeout isolation
-- Metrics and observability improvements
+- Per-target timeout
+- Improved persistence
+- Metrics / observability
 
 ### Future
 
@@ -301,7 +334,7 @@ Planned focus areas:
 
 ## 📌 Status
 
-✅ Stable v1.2 release candidate  
+✅ **Stable v1.2 release**
 🚧 v1.3 planned
 
 ---
