@@ -1,92 +1,173 @@
 import os
 import sys
+import time
 import subprocess
 from datetime import datetime
-from shared.paths import DATA_DIR, TARGETS_FILE, SPIDERFOOT_PATH
 import logging
+
+from shared.config import SPIDERFOOT_TIMEOUT
+from shared.constants import (
+    STATUS_SUCCESS,
+    STATUS_ERROR,
+    STATUS_TIMEOUT,
+)
+from shared.paths import (
+    TARGETS_FILE,
+    SPIDERFOOT_PATH,
+    SPIDERFOOT_OUTPUTS_DIR,
+)
 
 
 log = logging.getLogger(__name__)
+
+
+def format_duration(duration_seconds):
+    minutes = int(duration_seconds // 60)
+    seconds = int(duration_seconds % 60)
+    return f"{minutes}m{seconds:02d}s"
 
 
 def sanitize_target(target):
     return target.replace("@", "_").replace(".", "_")
 
 
+def build_scan_result(target, status, duration, output_file=None, error=None):
+    return {
+        "target": target,
+        "status": status,
+        "duration": duration,
+        "output_file": output_file,
+        "error": error,
+    }
+
+
 def load_targets():
     if not os.path.exists(TARGETS_FILE):
-        log.error(f"Targets file not found: {TARGETS_FILE}")
+        log.error(f"[SpiderFoot] Targets file not found: {TARGETS_FILE}")
         return []
 
     with open(TARGETS_FILE, encoding="utf-8") as f:
-        return [line.strip() for line in f if line.strip()]
+        targets = [line.strip() for line in f if line.strip()]
+
+    log.info(f"[SpiderFoot] Loaded {len(targets)} target(s)")
+    return targets
 
 
 def run_scan(target):
     log.info(f"[SpiderFoot] Running scan for: {target}")
+    start_time = time.time()
 
     safe_target = sanitize_target(target)
-
-    target_folder = os.path.join(DATA_DIR, "spiderfoot_outputs", safe_target)
+    target_folder = os.path.join(SPIDERFOOT_OUTPUTS_DIR, safe_target)
     os.makedirs(target_folder, exist_ok=True)
 
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    output_file = os.path.join(
-        target_folder,
-        f"scan_{timestamp}.json"
-    )
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = os.path.join(target_folder, f"scan_{timestamp}.json")
 
     spiderfoot_dir = os.path.dirname(SPIDERFOOT_PATH)
 
     try:
+        env = os.environ.copy()
+        env["PYTHONPATH"] = spiderfoot_dir
+
         with open(output_file, "w", encoding="utf-8") as f:
-
-            env = os.environ.copy()
-
-            env["PYTHONPATH"] = spiderfoot_dir
-
             result = subprocess.run(
                 [
                     sys.executable,
                     SPIDERFOOT_PATH,
                     "-s", target,
-                    "-o", "json"
+                    "-o", "json",
                 ],
                 stdout=f,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=300,
+                timeout=SPIDERFOOT_TIMEOUT,
                 cwd=spiderfoot_dir,
-                env=env
+                env=env,
             )
 
+        duration = time.time() - start_time
+
         if result.returncode != 0:
-            log.error(f"Error running scan for {target}: {result.stderr[:500]}")
-        else:
-            log.info(f"Scan saved: {output_file}")
+            error_message = (result.stderr or "").strip()[:500] or "Unknown SpiderFoot error"
+
+            log.error(
+                f"[SpiderFoot] Scan failed | target={target} | "
+                f"duration={duration:.2f}s ({format_duration(duration)}) | "
+                f"error={error_message}"
+            )
+
+            return build_scan_result(
+                target=target,
+                status=STATUS_ERROR,
+                duration=duration,
+                output_file=output_file,
+                error=error_message,
+            )
+
+        log.info(
+            f"[SpiderFoot] Scan completed | target={target} | "
+            f"duration={duration:.2f}s ({format_duration(duration)})"
+        )
+
+        return build_scan_result(
+            target=target,
+            status=STATUS_SUCCESS,
+            duration=duration,
+            output_file=output_file,
+            error=None,
+        )
 
     except subprocess.TimeoutExpired:
-        log.warning(f"Timeout running scan for {target}")
+        duration = time.time() - start_time
+        error_message = f"SpiderFoot scan timed out after {SPIDERFOOT_TIMEOUT} seconds"
 
-    except Exception:
-        log.exception(f"Unexpected error for {target}")
+        log.warning(
+            f"[SpiderFoot] Timeout | target={target} | "
+            f"duration={duration:.2f}s ({format_duration(duration)})"
+        )
+
+        return build_scan_result(
+            target=target,
+            status=STATUS_TIMEOUT,
+            duration=duration,
+            output_file=output_file,
+            error=error_message,
+        )
+
+    except Exception as exc:
+        duration = time.time() - start_time
+
+        log.exception(
+            f"[SpiderFoot] Unexpected error | target={target} | "
+            f"duration={duration:.2f}s ({format_duration(duration)})"
+        )
+
+        return build_scan_result(
+            target=target,
+            status=STATUS_ERROR,
+            duration=duration,
+            output_file=output_file,
+            error=str(exc),
+        )
 
 
 def main():
-    log.info("SpiderFoot Automation Started")
+    log.info("=" * 70)
+    log.info("[SpiderFoot] Automation started")
 
     targets = load_targets()
 
     if not targets:
-        log.warning("No targets found. Exiting...")
-        return
+        log.warning("[SpiderFoot] No targets found")
+        return []
+
+    results = []
 
     for target in targets:
-        log.info(f"Processing target: {target}")
-        run_scan(target)
+        results.append(run_scan(target))
 
-    log.info("SpiderFoot Automation Finished")
+    return results
 
 
 if __name__ == "__main__":
