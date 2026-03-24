@@ -7,8 +7,6 @@ __pycache__/
 
 # Virtual environments
 venv/
-.env
-.env.*
 
 # Build / Packaging
 build/
@@ -44,3 +42,4 @@ node_modules/
 ############################
 config/targets_for_spiderfoot.txt
 external/
+pipeline.lock
