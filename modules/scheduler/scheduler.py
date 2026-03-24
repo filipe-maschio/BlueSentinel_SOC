@@ -13,6 +13,12 @@ LOCK_FILE = "pipeline.lock"
 log = logging.getLogger(__name__)
 
 
+def format_duration(duration_seconds):
+    minutes = int(duration_seconds // 60)
+    seconds = int(duration_seconds % 60)
+    return f"{minutes}m{seconds:02d}s"
+
+
 def run_pipeline():
     setup_logging()
 
@@ -57,10 +63,9 @@ def run_pipeline():
                 raise RuntimeError("SpiderFoot failed")
 
             log.info("[Scheduler] SpiderFoot step completed")
-            duration_sec = time.time() - spider_start
-            duration_min = duration_sec / 60
+            spider_duration = time.time() - spider_start
 
-            log.info(f"[Scheduler] SpiderFoot duration: {duration_sec:.2f}s ({duration_min:.2f} min)")
+            log.info(f"[Scheduler] SpiderFoot duration: {spider_duration:.2f}s ({format_duration(spider_duration)})")
 
             # Detection
             detection_start = time.time()
@@ -89,20 +94,19 @@ def run_pipeline():
             log.info("[Scheduler] ----- DETECTION END -----")
 
             if result.returncode != 0:
-                log.error(f"[Scheduler] Detection error:{result.stderr}")
+                log.error(f"[Scheduler] Detection error: {result.stderr[:500]}")
                 raise RuntimeError("Detection failed")
 
             log.info("[Scheduler] Detection step completed")
-            duration_sec = time.time() - detection_start
-            duration_min = duration_sec / 60
+            detection_duration = time.time() - detection_start
 
-            log.info(f"[Scheduler] Detection duration: {duration_sec:.2f}s ({duration_min:.2f} min)")
+            log.info(f"[Scheduler] Detection duration: {detection_duration:.2f}s ({format_duration(detection_duration)})")
 
             # Final
             total_sec = time.time() - pipeline_start
-            total_min = total_sec / 60
 
-            log.info(f"[Scheduler] Total pipeline duration: {total_sec:.2f}s ({total_min:.2f} min)")
+            log.info(f"[Scheduler] Total pipeline duration: {total_sec:.2f}s ({format_duration(total_sec)})")
+
             log.info("[Scheduler] Pipeline finished successfully")
             log.info("[Scheduler] " + "=" * 60)
 
