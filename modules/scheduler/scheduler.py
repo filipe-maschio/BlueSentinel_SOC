@@ -22,10 +22,9 @@ def run_pipeline():
 
     try:
         with lock:
-            log.info("[Scheduler] ")
-            log.info("[Scheduler] =" * 60)
+            log.info("[Scheduler] " + "=" * 60)
             log.info(f"[Scheduler] NEW PIPELINE EXECUTION | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            log.info("[Scheduler] =" * 60)
+            log.info("[Scheduler] " + "=" * 60)
 
             # Start
             spider_start = time.time()
@@ -54,11 +53,14 @@ def run_pipeline():
             log.info("[Scheduler] ----- SPIDERFOOT END -----")
 
             if result.returncode != 0:
-                log.error(f"[Scheduler] SpiderFoot error:\n{result.stderr}")
+                log.error(f"[Scheduler] SpiderFoot error: {result.stderr[:500]}")
                 raise RuntimeError("SpiderFoot failed")
 
             log.info("[Scheduler] SpiderFoot step completed")
-            log.info(f"[Scheduler] SpiderFoot duration: {time.time() - spider_start:.2f}s")
+            duration_sec = time.time() - spider_start
+            duration_min = duration_sec / 60
+
+            log.info(f"[Scheduler] SpiderFoot duration: {duration_sec:.2f}s ({duration_min:.2f} min)")
 
             # Detection
             detection_start = time.time()
@@ -87,17 +89,22 @@ def run_pipeline():
             log.info("[Scheduler] ----- DETECTION END -----")
 
             if result.returncode != 0:
-                log.error(f"[Scheduler] Detection error:\n{result.stderr}")
+                log.error(f"[Scheduler] Detection error:{result.stderr}")
                 raise RuntimeError("Detection failed")
 
             log.info("[Scheduler] Detection step completed")
-            log.info(f"[Scheduler] Detection duration: {time.time() - detection_start:.2f}s")
+            duration_sec = time.time() - detection_start
+            duration_min = duration_sec / 60
+
+            log.info(f"[Scheduler] Detection duration: {duration_sec:.2f}s ({duration_min:.2f} min)")
 
             # Final
-            log.info(f"[Scheduler] Total pipeline duration: {time.time() - pipeline_start:.2f}s")
+            total_sec = time.time() - pipeline_start
+            total_min = total_sec / 60
+
+            log.info(f"[Scheduler] Total pipeline duration: {total_sec:.2f}s ({total_min:.2f} min)")
             log.info("[Scheduler] Pipeline finished successfully")
-            log.info("[Scheduler] =" * 60)
-            log.info("[Scheduler] ")
+            log.info("[Scheduler] " + "=" * 60)
 
     except Timeout:
         log.warning("[Scheduler] Pipeline already running. Skipping this execution.")
