@@ -217,11 +217,17 @@ Ensure no emojis are used in backend modules:
 
 ## 🚀 Roadmap
 
-### v1.2 (next)
+### v1.2 (in development)
 
-- Remove subprocess (direct module integration)
-- Pipeline abstraction layer
-- Config centralization
+Focus areas:
+
+- Logging standardization
+- Internal refactor (remove internal subprocess calls)
+- Centralized configuration
+- Structured execution results
+- SpiderFoot hardening
+- Detection engine robustness
+- Improved observability
 
 ### Future
 
@@ -234,7 +240,8 @@ Ensure no emojis are used in backend modules:
 
 ## 📌 Status
 
-✅ Stable v1.1 (production-ready baseline)
+✅ Stable v1.1 released  
+🚧 v1.2 in development
 
 ---
 
